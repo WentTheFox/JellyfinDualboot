@@ -1,0 +1,10 @@
+[Unit]
+Description=Jellyfin config volume (ext4 VHDX via qemu-nbd)
+RequiresMountsFor=/mnt/d
+Before=jellyfin.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/mnt/d/Git/WentTheFox/JellyfinDualboot/jf attach
+ExecStop=/mnt/d/Git/WentTheFox/JellyfinDualboot/jf detach

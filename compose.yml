@@ -1,0 +1,17 @@
+services:
+  jellyfin:
+    image: docker.io/jellyfin/jellyfin:${JELLYFIN_TAG:-latest}
+    container_name: jellyfin
+    restart: "no"
+    ports:
+      - "8096:8096"
+    environment:
+      TZ: ${TZ:-Europe/Budapest}
+      NVIDIA_DRIVER_CAPABILITIES: compute,video,utility
+    devices:
+      # NVIDIA GPU via CDI (sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml)
+      - nvidia.com/gpu=all
+    volumes:
+      - ${CONFIG_DIR}:/config
+      - ${CONFIG_DIR}/cache:/cache
+      - ${MEDIA_DIR}:/media:ro

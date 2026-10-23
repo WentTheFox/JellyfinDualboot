@@ -1,0 +1,27 @@
+# Linux-only Quadlet. Rendered by install.sh into /etc/containers/systemd/ (values from ../.env).
+# The WSL2 side keeps using ../compose.yml.
+[Unit]
+Description=Jellyfin (podman, supervised by systemd)
+Requires=jellyfin-config.service
+After=jellyfin-config.service network-online.target
+Wants=network-online.target
+RequiresMountsFor=@MEDIA_DIR@
+
+[Container]
+Image=docker.io/jellyfin/jellyfin:@JELLYFIN_TAG@
+ContainerName=jellyfin
+# Same owner as rootless podman gives on the WSL2 side, so the shared ext4 volume stays uid 1000.
+User=1000
+Group=1000
+AddDevice=nvidia.com/gpu=all
+Environment=TZ=@TZ@
+Environment=NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
+PublishPort=8096:8096
+Volume=/mnt/jellyfin-config:/config
+Volume=/mnt/jellyfin-config/cache:/cache
+Volume=@MEDIA_DIR@:/media:ro
+
+[Service]
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=300

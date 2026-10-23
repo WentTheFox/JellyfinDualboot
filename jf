@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+# Jellyfin dual-boot helper. Same script on CachyOS and inside WSL2.
+#   ./jf setup   (Linux, once) format the ext4 volume inside the VHDX
+#   ./jf up      attach the volume (Linux), start the container
+#   ./jf down    stop the container, detach the volume (Linux)
+#   ./jf attach|detach   volume only (used by systemd/jellyfin-config.service)
+#   ./jf start|stop      container only (WSL2 path; Linux uses the Quadlet)
+#   ./jf status
+set -euo pipefail
+cd "$(dirname "$(readlink -f "$0")")"
+
+[[ -f .env ]] && { set -a; . ./.env; set +a; }
+
+VHDX=$PWD/data/jellyfin-config.vhdx
+if [[ -e /proc/sys/fs/binfmt_misc/WSLInterop ]]; then
+  OS=wsl
+  : "${CONFIG_DIR:=/mnt/wsl/jellyfin-config}" # mounted from Windows by windows/mount-config.ps1
+else
+  OS=linux
+  : "${CONFIG_DIR:=/mnt/jellyfin-config}"
+fi
+export CONFIG_DIR MEDIA_DIR="${MEDIA_DIR:-/mnt/XS1000}"
+
+die() { echo "jf: $*" >&2; exit 1; }
+is_mounted() { mountpoint -q "$CONFIG_DIR"; }
+
+free_nbd() {
+  for d in /sys/block/nbd*; do
+    [[ -e $d/pid ]] || { echo "/dev/${d##*/}"; return; }
+  done
+  die "no free /dev/nbdX device"
+}
+
+attach() {
+  is_mounted && return
+  [[ $OS == linux ]] || die "$CONFIG_DIR not mounted, run windows\\mount-config.ps1 (as admin) first"
+  [[ -f $VHDX ]] || die "$VHDX missing"
+  sudo modprobe nbd
+  local dev; dev=$(free_nbd)
+  sudo qemu-nbd --connect="$dev" --format=vhdx "$VHDX"
+  sudo mkdir -p "$CONFIG_DIR"
+  sudo mount "$dev" "$CONFIG_DIR" || { sudo qemu-nbd -d "$dev"; die "mount failed (run ./jf setup first?)"; }
+}
+
+detach() {
+  is_mounted || return 0
+  [[ $OS == linux ]] || return 0 # Windows side unmounts via windows/unmount-config.ps1
+  local dev; dev=$(findmnt -no SOURCE "$CONFIG_DIR")
+  sudo umount "$CONFIG_DIR"
+  sudo qemu-nbd -d "$dev"
+}
+
+case "${1:-}" in
+  setup)
+    [[ $OS == linux ]] || die "run setup from Linux"
+    [[ -f $VHDX ]] || qemu-img create -f vhdx -o subformat=dynamic "$VHDX" 32G
+    sudo modprobe nbd
+    dev=$(free_nbd)
+    sudo qemu-nbd --connect="$dev" --format=vhdx "$VHDX"
+    if ! sudo blkid "$dev" >/dev/null 2>&1; then
+      sudo mkfs.ext4 -L jellyfin-config "$dev"
+    else
+      echo "jf: $VHDX already has a filesystem, not formatting"
+    fi
+    sudo mkdir -p "$CONFIG_DIR"
+    sudo mount "$dev" "$CONFIG_DIR"
+    sudo chown "$(id -u):$(id -g)" "$CONFIG_DIR"
+    mkdir -p "$CONFIG_DIR/cache"
+    echo "jf: volume ready at $CONFIG_DIR"
+    ;;
+  attach) attach ;;
+  detach) detach ;;
+  start)
+    command -v podman >/dev/null || die "podman not installed"
+    [[ -d $MEDIA_DIR ]] || die "MEDIA_DIR $MEDIA_DIR missing"
+    is_mounted || die "$CONFIG_DIR not mounted"
+    mkdir -p "$CONFIG_DIR/cache"
+    podman compose up -d
+    ;;
+  stop) podman compose down ;;
+  up)
+    attach
+    "$0" start
+    echo "jf: Jellyfin on http://localhost:8096"
+    ;;
+  down)
+    podman compose down || true
+    detach
+    ;;
+  status)
+    is_mounted && echo "config: mounted at $CONFIG_DIR" || echo "config: not mounted"
+    podman ps --filter name=jellyfin
+    ;;
+  *)
+    sed -n '2,8p' "$0"; exit 1 ;;
+esac
