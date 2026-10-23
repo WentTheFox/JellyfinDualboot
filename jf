@@ -71,7 +71,7 @@ case "${1:-}" in
     sudo mount "$dev" "$CONFIG_DIR"
     sudo chown "$(id -u):$(id -g)" "$CONFIG_DIR"
     mkdir -p "$CONFIG_DIR/cache"
-    touch "$CONFIG_DIR/.jellyfin-volume"
+    touch "$CONFIG_DIR/.dualboot-volume"
     echo "jf: volume ready at $CONFIG_DIR"
     ;;
   attach) attach ;;
@@ -82,7 +82,8 @@ case "${1:-}" in
     [[ -d $MEDIA_DIR ]] || die "MEDIA_DIR $MEDIA_DIR missing"
     is_mounted || die "$CONFIG_DIR not mounted"
     mkdir -p "$CONFIG_DIR/cache"
-    touch "$CONFIG_DIR/.jellyfin-volume" # checked by the container entrypoint (see compose.yml)
+    rm -f "$CONFIG_DIR/.jellyfin-volume" # old name; Jellyfin aborts on any unknown .jellyfin-* file
+    touch "$CONFIG_DIR/.dualboot-volume" # checked by the container entrypoint (see compose.yml)
     compose up -d
     ;;
   stop) compose down ;;

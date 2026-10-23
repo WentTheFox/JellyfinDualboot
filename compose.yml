@@ -9,7 +9,7 @@ services:
     entrypoint:
       - /bin/sh
       - -c
-      - '[ -e /config/.jellyfin-volume ] || { echo "jellyfin: /config is not the shared ext4 volume (no .jellyfin-volume marker), refusing to start" >&2; exit 1; }; exec /jellyfin/jellyfin'
+      - '[ -e /config/.dualboot-volume ] || { echo "jellyfin: /config is not the shared ext4 volume (no .dualboot-volume marker), refusing to start" >&2; exit 1; }; exec /jellyfin/jellyfin'
     ports:
       - "8096:8096"
     environment:

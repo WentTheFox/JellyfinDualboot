@@ -69,12 +69,32 @@ class JellyfinService : ServiceBase
         keepAlive.Exited += delegate
         {
             if (stopping) return;
+            Log("keep-alive exited, code " + keepAlive.ExitCode);
+            // The keep-alive can fail on its own; only stop if the distro is really gone.
+            if (DistroRunning()) { Log("distro still running, ignoring"); return; }
             distroGone = true;
-            Log("keep-alive exited (distro gone), stopping service");
+            Log("distro gone, stopping service");
             new Thread(delegate () { Stop(); }).Start();
         };
         keepAlive.Start();
         Log("keep-alive pid " + keepAlive.Id);
+    }
+
+    bool DistroRunning()
+    {
+        try
+        {
+            var psi = new ProcessStartInfo("wsl.exe", "-l --running -q")
+            { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, StandardOutputEncoding = System.Text.Encoding.Unicode };
+            using (var p = Process.Start(psi))
+            {
+                var o = p.StandardOutput.ReadToEnd();
+                p.WaitForExit();
+                // empty output = nothing running; with no -d given, any running distro counts
+                return distro != "" ? o.IndexOf(distro, StringComparison.OrdinalIgnoreCase) >= 0 : o.Trim().Length > 0;
+            }
+        }
+        catch (Exception e) { Log("DistroRunning failed: " + e.Message); return true; }
     }
 
     void Down()
