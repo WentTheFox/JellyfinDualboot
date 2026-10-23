@@ -61,7 +61,8 @@ class JellyfinService : ServiceBase
 
         // Hold the distro open while we run; when this process exits the distro is gone (wsl --shutdown, crash).
         // stdin must stay open or wsl.exe returns immediately when started without a console.
-        var da = distro != "" ? "-d \"" + distro + "\" " : "";
+        // wsl.exe takes quotes literally ("Debian" -> no such distro), so pass the name bare.
+        var da = distro != "" ? "-d " + distro + " " : "";
         keepAlive = new Process();
         keepAlive.StartInfo = new ProcessStartInfo("wsl.exe", da + "-- sleep infinity")
         { UseShellExecute = false, CreateNoWindow = true, RedirectStandardInput = true };
@@ -106,7 +107,7 @@ class JellyfinService : ServiceBase
         {
             // Don't relaunch the distro just to run ./jf down; the container died with it.
             var vhdx = Path.Combine(project, "data", "jellyfin-config.vhdx");
-            Process.Start(new ProcessStartInfo("wsl.exe", "--unmount \"" + vhdx + "\"")
+            Process.Start(new ProcessStartInfo("wsl.exe", "--unmount " + vhdx)
             { UseShellExecute = false, CreateNoWindow = true }).WaitForExit();
         }
         else

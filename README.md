@@ -95,6 +95,7 @@ starts it at boot; the default is manual, so booting Windows doesn't claim the v
 If the distro goes away underneath it (`wsl --shutdown`, crash), the service notices and stops itself
 (log: `windows\bin\service.log`). To also stop the container cleanly in that case, run once inside WSL2:
 `bash windows/install-wsl-hook.sh` (a systemd unit that runs `podman stop` before the distro shuts down).
+Rebuild after editing `JellyfinService.cs` with `.windowsPdate-service.ps1`.
 Shutdown waits up to 90 s (`WaitToKillServiceTimeout`) for the container to stop and the VHDX to detach.
 
 Pass `-Distro <name>` if your default WSL distro isn't the one with podman. The project is expected at
