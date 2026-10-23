@@ -3,6 +3,13 @@ services:
     image: docker.io/jellyfin/jellyfin:${JELLYFIN_TAG:-latest}
     container_name: jellyfin
     restart: "no"
+    # Guard against a raw `podman compose up` while the VHDX isn't mounted: compose would silently create an
+    # empty CONFIG_DIR and Jellyfin would initialise a throwaway config in it. `jf` drops the marker file
+    # into the real volume (only after checking it is a mountpoint).
+    entrypoint:
+      - /bin/sh
+      - -c
+      - '[ -e /config/.jellyfin-volume ] || { echo "jellyfin: /config is not the shared ext4 volume (no .jellyfin-volume marker), refusing to start" >&2; exit 1; }; exec /jellyfin/jellyfin'
     ports:
       - "8096:8096"
     environment:

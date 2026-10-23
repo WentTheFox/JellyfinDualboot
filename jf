@@ -23,6 +23,10 @@ export CONFIG_DIR
 export MEDIA_DIR="${MEDIA_DIR:-}" # required for start/up, set in .env
 
 die() { echo "jf: $*" >&2; exit 1; }
+# `podman compose` only exists since podman 4.7; Debian 12 ships 4.3 with the standalone podman-compose
+compose() {
+  if podman compose version >/dev/null 2>&1; then podman compose "$@"; else podman-compose "$@"; fi
+}
 is_mounted() { mountpoint -q "$CONFIG_DIR"; }
 
 free_nbd() {
@@ -67,6 +71,7 @@ case "${1:-}" in
     sudo mount "$dev" "$CONFIG_DIR"
     sudo chown "$(id -u):$(id -g)" "$CONFIG_DIR"
     mkdir -p "$CONFIG_DIR/cache"
+    touch "$CONFIG_DIR/.jellyfin-volume"
     echo "jf: volume ready at $CONFIG_DIR"
     ;;
   attach) attach ;;
@@ -77,16 +82,17 @@ case "${1:-}" in
     [[ -d $MEDIA_DIR ]] || die "MEDIA_DIR $MEDIA_DIR missing"
     is_mounted || die "$CONFIG_DIR not mounted"
     mkdir -p "$CONFIG_DIR/cache"
-    podman compose up -d
+    touch "$CONFIG_DIR/.jellyfin-volume" # checked by the container entrypoint (see compose.yml)
+    compose up -d
     ;;
-  stop) podman compose down ;;
+  stop) compose down ;;
   up)
     attach
     "$0" start
     echo "jf: Jellyfin on http://localhost:8096"
     ;;
   down)
-    podman compose down || true
+    compose down || true
     detach
     ;;
   status)

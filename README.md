@@ -81,6 +81,22 @@ From an elevated PowerShell:
 .\windows\unmount-config.ps1    # ./jf down, then wsl --unmount (before rebooting to Linux)
 ```
 
+### Optional: Windows service
+
+```powershell
+.\windows\install-service.ps1 [-Auto] [-Distro Debian]   # builds + registers, asks for your account password
+Start-Service JellyfinDualboot    # mount-config.ps1
+Stop-Service JellyfinDualboot     # unmount-config.ps1 (also runs on Windows shutdown/restart)
+.\windows\uninstall-service.ps1
+```
+
+It runs as your account (WSL2 distros are per-user) and holds the distro open while running. `-Auto`
+starts it at boot; the default is manual, so booting Windows doesn't claim the volume unless you want it.
+If the distro goes away underneath it (`wsl --shutdown`, crash), the service notices and stops itself
+(log: `windows\bin\service.log`). To also stop the container cleanly in that case, run once inside WSL2:
+`bash windows/install-wsl-hook.sh` (a systemd unit that runs `podman stop` before the distro shuts down).
+Shutdown waits up to 90 s (`WaitToKillServiceTimeout`) for the container to stop and the VHDX to detach.
+
 Pass `-Distro <name>` if your default WSL distro isn't the one with podman. The project is expected at
 `D:\Git\WentTheFox\JellyfinDualboot`.
 

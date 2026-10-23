@@ -1,0 +1,19 @@
+# WSL2 only. Stops the container cleanly when the distro shuts down (wsl --shutdown, Windows shutdown),
+# so SQLite isn't killed mid-write. Rendered by windows/install-wsl-hook.sh.
+[Unit]
+Description=Stop Jellyfin container before WSL2 shuts down
+# Stops run in reverse start order: this unit stops before the user's podman runtime goes away.
+After=user@@UID@.service
+Wants=user@@UID@.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=@USER@
+Environment=XDG_RUNTIME_DIR=/run/user/@UID@
+ExecStart=/bin/true
+ExecStop=-/usr/bin/podman stop -t 15 jellyfin
+TimeoutStopSec=25
+
+[Install]
+WantedBy=multi-user.target
