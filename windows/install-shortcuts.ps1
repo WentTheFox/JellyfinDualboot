@@ -8,7 +8,13 @@ param(
 )
 $name = 'JellyfinDualboot'
 
-if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole('Administrator')) {
+$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isAdmin) {
+  if ($Elevated) { # relaunched but still not admin: stop instead of looping
+    Write-Host "Still not elevated after relaunching as $env:USERNAME." -ForegroundColor Red
+    Read-Host 'Press Enter to close'
+    return
+  }
   $ps = (Get-Process -Id $PID).Path
   Start-Process $ps -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`" -ProjectWin `"$ProjectWin`" -Elevated"
   return
