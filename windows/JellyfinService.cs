@@ -101,7 +101,8 @@ class JellyfinService : ServiceBase
     void Down()
     {
         stopping = true;
-        RequestAdditionalTime(StepMs);
+        // Only legal while handling Stop; on Shutdown it throws, and Windows waits WaitToKillServiceTimeout instead.
+        try { RequestAdditionalTime(StepMs); } catch (InvalidOperationException) { }
         Log("stop (distroGone=" + distroGone + ")");
         if (distroGone)
         {
@@ -119,5 +120,10 @@ class JellyfinService : ServiceBase
     }
 
     protected override void OnStop() { Down(); }
-    protected override void OnShutdown() { Down(); }
+
+    protected override void OnShutdown()
+    {
+        try { Down(); }
+        catch (Exception e) { Log("shutdown failed: " + e); throw; }
+    }
 }
