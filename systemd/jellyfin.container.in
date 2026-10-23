@@ -3,6 +3,7 @@
 [Unit]
 Description=Jellyfin (podman, supervised by systemd)
 Requires=jellyfin-config.service
+PartOf=jellyfin-stack.target
 After=jellyfin-config.service network-online.target
 Wants=network-online.target
 RequiresMountsFor=@MEDIA_DIR@

@@ -54,11 +54,12 @@ version mismatch between the sides can leave one unable to start. Update both si
 ## Daily use: CachyOS
 
 ```sh
-sudo systemctl start jellyfin          # attaches the VHDX, then starts the container
-sudo systemctl stop jellyfin-config    # stops the container, detaches the VHDX (do this before rebooting)
+sudo systemctl start jellyfin-stack.target   # attaches the VHDX, then starts the container
+sudo systemctl stop jellyfin-stack.target    # stops the container, then detaches the VHDX (before rebooting)
 ```
 
-The units are intentionally **not enabled at boot**. systemd restarts the container if it crashes.
+The units are intentionally **not enabled at boot**. systemd restarts the container if it crashes. (`stop jellyfin` alone only stops the container and leaves
+the volume attached.)
 Open <http://localhost:8096>. Add libraries as `/media/...` and pick NVIDIA NVENC under
 Dashboard, Playback, Transcoding. After editing `.env` re-run `systemd/install.sh`. Don't mix
 `./jf up` with the systemd units on Linux (same container name).

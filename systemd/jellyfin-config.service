@@ -2,6 +2,7 @@
 Description=Jellyfin config volume (ext4 VHDX via qemu-nbd)
 RequiresMountsFor=/mnt/d
 Before=jellyfin.service
+PartOf=jellyfin-stack.target
 
 [Service]
 Type=oneshot
