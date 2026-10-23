@@ -86,6 +86,9 @@ Pass `-Distro <name>` if your default WSL distro isn't the one with podman. The 
 
 ## Troubleshooting
 
+- **Jellyfin stops by itself after exactly 10 minutes**: the media mount has `x-systemd.idle-timeout`.
+  The container's bind mount doesn't count as autofs activity, so systemd unmounts the share and stops
+  Jellyfin (it `Requires=` the mount). Don't use an idle timeout on the media mount (Linux fstab or WSL2).
 - **`/media` is empty in the container**: the share wasn't mounted when the container started. Mount it
   first (on Linux the systemd unit requires `MEDIA_DIR`).
 - **Volume mount fails with "run ./jf setup first"**: the VHDX has no filesystem yet.

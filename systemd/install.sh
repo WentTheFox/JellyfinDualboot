@@ -5,7 +5,7 @@
 set -euo pipefail
 cd "$(dirname "$(readlink -f "$0")")"
 set -a; . ../.env; set +a
-: "${MEDIA_DIR:=/mnt/XS1000}" "${TZ:=Europe/Budapest}"
+: "${MEDIA_DIR:?MEDIA_DIR not set in .env}" "${TZ:=Europe/Budapest}"
 [[ ${JELLYFIN_TAG:-latest} != latest ]] || echo "install.sh: warning, JELLYFIN_TAG is not pinned" >&2
 
 sudo install -m644 jellyfin-config.service jellyfin-stack.target /etc/systemd/system/

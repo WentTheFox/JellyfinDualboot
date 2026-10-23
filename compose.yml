@@ -14,4 +14,4 @@ services:
     volumes:
       - ${CONFIG_DIR}:/config
       - ${CONFIG_DIR}/cache:/cache
-      - ${MEDIA_DIR}:/media:ro
+      - ${MEDIA_DIR:?set MEDIA_DIR in .env}:/media:ro

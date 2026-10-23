@@ -19,7 +19,8 @@ else
   OS=linux
   : "${CONFIG_DIR:=/mnt/jellyfin-config}"
 fi
-export CONFIG_DIR MEDIA_DIR="${MEDIA_DIR:-/mnt/XS1000}"
+export CONFIG_DIR
+export MEDIA_DIR="${MEDIA_DIR:-}" # required for start/up, set in .env
 
 die() { echo "jf: $*" >&2; exit 1; }
 is_mounted() { mountpoint -q "$CONFIG_DIR"; }
@@ -72,6 +73,7 @@ case "${1:-}" in
   detach) detach ;;
   start)
     command -v podman >/dev/null || die "podman not installed"
+    [[ -n $MEDIA_DIR ]] || die "MEDIA_DIR not set (see .env.example)"
     [[ -d $MEDIA_DIR ]] || die "MEDIA_DIR $MEDIA_DIR missing"
     is_mounted || die "$CONFIG_DIR not mounted"
     mkdir -p "$CONFIG_DIR/cache"
